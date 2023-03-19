@@ -32,7 +32,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/route53/types"
 	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/p2p/dnsdisc"
-	"gopkg.in/urfave/cli.v1"
+	"github.com/urfave/cli/v2"
 )
 
 const (
@@ -45,21 +45,21 @@ const (
 )
 
 var (
-	route53AccessKeyFlag = cli.StringFlag{
-		Name:   "access-key-id",
-		Usage:  "AWS Access Key ID",
-		EnvVar: "AWS_ACCESS_KEY_ID",
+	route53AccessKeyFlag = &cli.StringFlag{
+		Name:    "access-key-id",
+		Usage:   "AWS Access Key ID",
+		EnvVars: []string{"AWS_ACCESS_KEY_ID"},
 	}
-	route53AccessSecretFlag = cli.StringFlag{
-		Name:   "access-key-secret",
-		Usage:  "AWS Access Key Secret",
-		EnvVar: "AWS_SECRET_ACCESS_KEY",
+	route53AccessSecretFlag = &cli.StringFlag{
+		Name:    "access-key-secret",
+		Usage:   "AWS Access Key Secret",
+		EnvVars: []string{"AWS_SECRET_ACCESS_KEY"},
 	}
-	route53ZoneIDFlag = cli.StringFlag{
+	route53ZoneIDFlag = &cli.StringFlag{
 		Name:  "zone-id",
 		Usage: "Route53 Zone ID",
 	}
-	route53RegionFlag = cli.StringFlag{
+	route53RegionFlag = &cli.StringFlag{
 		Name:  "aws-region",
 		Usage: "AWS Region",
 		Value: "eu-central-1",
@@ -329,8 +329,9 @@ func (c *route53Client) collectRecords(name string) (map[string]recordSet, error
 	var req route53.ListResourceRecordSetsInput
 	req.HostedZoneId = &c.zoneID
 	existing := make(map[string]recordSet)
+	log.Info("Loading existing TXT records", "name", name, "zone", c.zoneID)
 	for page := 0; ; page++ {
-		log.Info("Loading existing TXT records", "name", name, "zone", c.zoneID, "page", page)
+		log.Debug("Loading existing TXT records", "name", name, "zone", c.zoneID, "page", page)
 		resp, err := c.api.ListResourceRecordSets(context.TODO(), &req)
 		if err != nil {
 			return existing, err
@@ -360,7 +361,7 @@ func (c *route53Client) collectRecords(name string) (map[string]recordSet, error
 		req.StartRecordName = resp.NextRecordName
 		req.StartRecordType = resp.NextRecordType
 	}
-
+	log.Info("Loaded existing TXT records", "name", name, "zone", c.zoneID, "records", len(existing))
 	return existing, nil
 }
 
